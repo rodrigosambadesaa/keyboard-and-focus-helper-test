@@ -5,5 +5,5 @@
       minimum. AndroidX Test 1.6+ itself requires API 19.
     -->
     <uses-sdk
-        tools:overrideLibrary="androidx.test.runner,androidx.test.core,androidx.test.monitor,androidx.test.ext.junit" />
+        tools:overrideLibrary="androidx.test.runner,androidx.test.core,androidx.test.monitor,androidx.test.ext.junit,androidx.test.services.storage" />
 </manifest>
