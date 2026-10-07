@@ -61,7 +61,7 @@ jobs:
       matrix:
         include:
           - api-level: 30
-            runner: macos-26-intel
+            runner: macos-15-intel
           - api-level: 23
             runner: macos-15-intel
           - api-level: 28
