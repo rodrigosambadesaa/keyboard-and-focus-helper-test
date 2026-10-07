@@ -14,7 +14,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [19, 28, 30, 35])
+@Config(sdk = [19, 28, 30, 34])
 class KeyboardAndFocusHelperTest {
     @Test fun negativeDelayIsRejected() {
         val view = EditText(ApplicationProvider.getApplicationContext())
