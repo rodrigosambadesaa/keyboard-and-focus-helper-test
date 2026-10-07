@@ -17,6 +17,17 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Verify exact pinned Gist source
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW_URL="https://gist.githubusercontent.com/rodrigosambadesaa/fcf03abc572f23286d13755344595de7/raw/e4d47500bd1658d3134b39a4c10e4072984da580/KeyboardAndFocusHelper.kt"
+          curl --fail --location --silent --show-error "$RAW_URL" --output /tmp/KeyboardAndFocusHelper.kt
+          cmp --silent /tmp/KeyboardAndFocusHelper.kt app/src/main/java/KeyboardAndFocusHelper.kt || {
+            echo "Repository source differs from the pinned Gist revision." >&2
+            diff --unified /tmp/KeyboardAndFocusHelper.kt app/src/main/java/KeyboardAndFocusHelper.kt || true
+            exit 1
+          }
       - name: Install SDK packages
         run: |
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -38,6 +49,7 @@ jobs:
           if-no-files-found: ignore
 
   emulator:
+    needs: unit-tests
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
