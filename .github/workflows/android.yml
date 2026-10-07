@@ -54,12 +54,20 @@ jobs:
 
   emulator:
     needs: unit-tests
-    runs-on: macos-15-intel
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
-        api-level: [30, 23, 28, 35]
+        include:
+          - api-level: 30
+            runner: macos-26-intel
+          - api-level: 23
+            runner: macos-15-intel
+          - api-level: 28
+            runner: macos-15-intel
+          - api-level: 35
+            runner: macos-15-intel
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
