@@ -358,12 +358,25 @@ object FixedKeyboardAndFocusHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && insets != null) {
             try {
                 val visible = insets.isVisible(WindowInsetsCompat.Type.ime())
-                val height = if (visible) {
-                    max(0, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+                if (!visible) return KeyboardState(false, 0)
+
+                val insetHeight = max(0, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+                if (insetHeight > 0) return KeyboardState(true, insetHeight)
+
+                // Android 11 / some IMEs can transiently report visible=true while
+                // the compat IME bottom inset is still zero. Fall back to the
+                // visible-window geometry instead of reporting an impossible
+                // visible keyboard with zero height.
+                val fallback = legacyKeyboardState(
+                    measurementView,
+                    insets,
+                    minimumKeyboardHeightDp
+                )
+                return if (fallback.heightPx > 0) {
+                    KeyboardState(true, fallback.heightPx)
                 } else {
-                    0
+                    KeyboardState(true, 0)
                 }
-                return KeyboardState(visible, height)
             } catch (_: RuntimeException) {
                 // Fall through to the visible-frame calculation on broken ROMs.
             }
@@ -380,8 +393,19 @@ object FixedKeyboardAndFocusHelper {
         return try {
             val visibleFrame = Rect()
             view.getWindowVisibleDisplayFrame(visibleFrame)
-            val rootHeight = max(view.height, visibleFrame.bottom - visibleFrame.top)
-            val obscuredBottom = max(0, rootHeight - visibleFrame.bottom)
+
+            // getWindowVisibleDisplayFrame() is expressed in screen coordinates.
+            // Compute the root's bottom in the same coordinate space; subtracting
+            // a screen-space bottom directly from view.height is incorrect when
+            // the root does not start at y=0.
+            val locationOnScreen = IntArray(2)
+            view.getLocationOnScreen(locationOnScreen)
+            val rootBottomOnScreen =
+                locationOnScreen[1].toLong() + view.height.toLong()
+            val obscuredBottom = max(
+                0L,
+                rootBottomOnScreen - visibleFrame.bottom.toLong()
+            ).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
             val systemBarBottom = try {
                 insets?.getInsets(WindowInsetsCompat.Type.systemBars())?.bottom ?: 0
             } catch (_: RuntimeException) {
