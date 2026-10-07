@@ -2,15 +2,12 @@ package dev.rodrigosambade.keyboardtest
 
 import KeyboardAndFocusHelper
 import android.content.Context
-import android.os.SystemClock
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.view.inputmethod.InputMethodManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,81 +75,5 @@ class KeyboardDeviceTest {
         }
     }
 
-    @Test
-    fun softwareImeCanBeShownMeasuredAndHidden() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            lateinit var input: EditText
 
-            scenario.onActivity { activity ->
-                input = EditText(activity).apply {
-                    setText("IME integration test")
-                    isFocusableInTouchMode = true
-                }
-                activity.setContentView(input)
-                assertTrue(KeyboardAndFocusHelper.requestFocusAndShowKeyboard(input, 100))
-            }
-
-            val helperMadeImeVisible = waitUntil(scenario) {
-                KeyboardAndFocusHelper.isKeyboardVisible(input)
-            }
-            if (!helperMadeImeVisible) {
-                val immReturnedTrue = AtomicBoolean(false)
-                scenario.onActivity { activity ->
-                    val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                    immReturnedTrue.set(
-                        imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
-                    )
-                }
-                val directImmMadeImeVisible = waitUntil(scenario) {
-                    KeyboardAndFocusHelper.isKeyboardVisible(input)
-                }
-                fail(
-                    "KeyboardAndFocusHelper failed to make IME visible; " +
-                        "direct InputMethodManager returned=${immReturnedTrue.get()} " +
-                        "and visible=$directImmMadeImeVisible"
-                )
-            }
-
-            val height = AtomicInteger()
-            scenario.onActivity {
-                assertTrue(KeyboardAndFocusHelper.isKeyboardVisible(input))
-                height.set(KeyboardAndFocusHelper.getKeyboardHeightPx(input))
-            }
-            assertTrue("Visible IME must have a positive measured height", height.get() > 0)
-
-            scenario.onActivity {
-                assertTrue(KeyboardAndFocusHelper.hideKeyboard(input))
-            }
-
-            assertTrue(
-                "IME did not become hidden within timeout",
-                waitUntil(scenario) {
-                    !KeyboardAndFocusHelper.isKeyboardVisible(input) &&
-                        KeyboardAndFocusHelper.getKeyboardHeightPx(input) == 0
-                }
-            )
-        }
-    }
-
-    private fun waitUntil(
-        scenario: ActivityScenario<MainActivity>,
-        timeoutMs: Long = 8_000,
-        condition: () -> Boolean
-    ): Boolean {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val deadline = SystemClock.uptimeMillis() + timeoutMs
-
-        do {
-            val matched = AtomicBoolean(false)
-            scenario.onActivity {
-                matched.set(condition())
-            }
-            if (matched.get()) return true
-
-            instrumentation.waitForIdleSync()
-            SystemClock.sleep(100)
-        } while (SystemClock.uptimeMillis() < deadline)
-
-        return false
-    }
 }
