@@ -52,7 +52,7 @@ class MainActivity : Activity() {
             window.setSoftInputMode(mode)
             refreshStatus()
         }
-        setContentView(ScrollView(this).apply { fillViewport = true; addView(column) })
+        setContentView(ScrollView(this).apply { isFillViewport = true; addView(column) })
         subscription = KeyboardAndFocusHelper.setOnKeyboardVisibilityListener(window.decorView) { visible, height ->
             status.text = "IME visible=$visible height=${height}px; focus=${input.hasFocus()}"
         }
