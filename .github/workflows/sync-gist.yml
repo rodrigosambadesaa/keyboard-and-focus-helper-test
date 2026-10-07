@@ -1,0 +1,43 @@
+name: Sync exact Gist source
+
+on:
+  push:
+    paths:
+      - ".github/workflows/sync-gist.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Download exact pinned Gist revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW_URL="https://gist.githubusercontent.com/rodrigosambadesaa/fcf03abc572f23286d13755344595de7/raw/e4d47500bd1658d3134b39a4c10e4072984da580/KeyboardAndFocusHelper.kt"
+          mkdir -p app/src/main/java
+          curl --fail --location --silent --show-error "$RAW_URL"             --output app/src/main/java/KeyboardAndFocusHelper.kt
+          rm -f app/src/main/java/dev/rodrigosambade/keyboardtest/KeyboardAndFocusHelper.kt
+          test -s app/src/main/java/KeyboardAndFocusHelper.kt
+          head -n 1 app/src/main/java/KeyboardAndFocusHelper.kt | grep -F '@file:Suppress("unused")'
+          if grep -q '^package ' app/src/main/java/KeyboardAndFocusHelper.kt; then
+            echo "Pinned Gist unexpectedly contains a package declaration" >&2
+            exit 1
+          fi
+      - name: Commit exact Gist source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A app/src/main/java/KeyboardAndFocusHelper.kt             app/src/main/java/dev/rodrigosambade/keyboardtest/KeyboardAndFocusHelper.kt
+          if git diff --cached --quiet; then
+            echo "Exact Gist source already synchronized."
+            exit 0
+          fi
+          git commit -m "Use exact pinned KeyboardAndFocusHelper Gist source"
+          git push
