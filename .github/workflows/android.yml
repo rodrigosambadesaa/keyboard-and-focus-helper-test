@@ -52,6 +52,48 @@ jobs:
             app/build/reports/tests/
           if-no-files-found: ignore
 
+  api30-linux-probe:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Require KVM
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -e /dev/kvm
+          sudo chmod 666 /dev/kvm
+          test -r /dev/kvm
+          test -w /dev/kvm
+      - name: Run API 30 corrected implementation probe
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            set -e
+            adb wait-for-device
+            for i in $(seq 1 60); do
+              if adb shell service check package 2>/dev/null | grep -q "found"; then
+                break
+              fi
+              sleep 2
+            done
+            adb shell service check package | grep -q "found"
+            adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+            gradle --no-daemon :app:connectedDebugAndroidTest \
+              -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+
   emulator:
     needs: unit-tests
     runs-on: ${{ matrix.runner }}
