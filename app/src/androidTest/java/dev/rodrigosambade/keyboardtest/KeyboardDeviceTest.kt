@@ -1,9 +1,11 @@
 package dev.rodrigosambade.keyboardtest
 
 import KeyboardAndFocusHelper
+import android.content.Context
 import android.os.SystemClock
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.view.inputmethod.InputMethodManager
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -90,12 +92,26 @@ class KeyboardDeviceTest {
                 assertTrue(KeyboardAndFocusHelper.requestFocusAndShowKeyboard(input, 100))
             }
 
-            assertTrue(
-                "IME did not become visible within timeout",
-                waitUntil(scenario) {
+            val helperMadeImeVisible = waitUntil(scenario) {
+                KeyboardAndFocusHelper.isKeyboardVisible(input)
+            }
+            if (!helperMadeImeVisible) {
+                val immReturnedTrue = AtomicBoolean(false)
+                scenario.onActivity { activity ->
+                    val imm = activity.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                    immReturnedTrue.set(
+                        imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT)
+                    )
+                }
+                val directImmMadeImeVisible = waitUntil(scenario) {
                     KeyboardAndFocusHelper.isKeyboardVisible(input)
                 }
-            )
+                fail(
+                    "KeyboardAndFocusHelper failed to make IME visible; " +
+                        "direct InputMethodManager returned=${immReturnedTrue.get()} " +
+                        "and visible=$directImmMadeImeVisible"
+                )
+            }
 
             val height = AtomicInteger()
             scenario.onActivity {
