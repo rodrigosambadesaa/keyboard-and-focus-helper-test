@@ -1,5 +1,6 @@
 package dev.rodrigosambade.keyboardtest
 
+import KeyboardAndFocusHelper
 import android.app.Activity
 import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
