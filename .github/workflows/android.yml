@@ -57,8 +57,9 @@ jobs:
     runs-on: macos-15-intel
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
-        api-level: [23, 28, 30, 35]
+        api-level: [30, 23, 28, 35]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
