@@ -1,0 +1,9 @@
+<manifest xmlns:tools="http://schemas.android.com/tools">
+    <!--
+      Instrumentation is executed only on API 23+ in CI. The production app
+      deliberately remains minSdk 16 to compile the Gist under its documented
+      minimum. AndroidX Test 1.6+ itself requires API 19.
+    -->
+    <uses-sdk
+        tools:overrideLibrary="androidx.test.runner,androidx.test.core,androidx.test.monitor,androidx.test.ext.junit" />
+</manifest>
