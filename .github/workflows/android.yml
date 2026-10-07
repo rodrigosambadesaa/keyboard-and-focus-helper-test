@@ -78,6 +78,15 @@ jobs:
           emulator-boot-timeout: 900
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           script: |
+            set -e
+            adb wait-for-device
+            for i in $(seq 1 90); do
+              if adb shell service check package 2>/dev/null | grep -q "found"; then
+                break
+              fi
+              sleep 2
+            done
+            adb shell service check package | grep -q "found"
             adb shell settings put secure show_ime_with_hard_keyboard 1 || true
 
             # These must pass on every API: general contracts for the exact Gist
