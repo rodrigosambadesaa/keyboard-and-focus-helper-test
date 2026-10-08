@@ -119,11 +119,7 @@ jobs:
             adb shell service check package | grep -q "found"
             adb shell settings put secure show_ime_with_hard_keyboard 1 || true
             gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
-            set +e
-            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
-            ORIGINAL_GIST_STATUS=$?
-            set -e
-            if [ "$ORIGINAL_GIST_STATUS" -eq 0 ]; then echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run."; else echo "::warning::Exact Gist reproduced the API 30 IME regression; fixed implementation passed separately."; fi
+            if gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest; then echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run."; else echo "::warning::Exact Gist reproduced the API 30 IME regression; fixed implementation passed separately."; fi
 
       - name: API 35 instrumentation
         uses: reactivecircus/android-emulator-runner@v2
