@@ -228,11 +228,7 @@ object FixedKeyboardAndFocusHelper {
         if (delayMillis < 0L) return false
         return executeOnView(view, delayMillis) {
             if (!view.hasFocus()) view.requestFocus()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                showWithWindowInsets(view) || showWithInputMethodManager(view)
-            } else {
-                showWithInputMethodManager(view)
-            }
+            showKeyboardWhenWindowReady(view)
         }
     }
 
@@ -418,6 +414,45 @@ object FixedKeyboardAndFocusHelper {
             KeyboardState(visible, if (visible) keyboardHeight else 0)
         } catch (_: RuntimeException) {
             KeyboardState(false, 0)
+        }
+    }
+
+    /**
+     * Android 11 can drop an IME show request made after attachment but before
+     * the Activity window receives focus. Retry briefly until both conditions
+     * are true. Once ready, issue both modern insets and IMM requests on API 30+
+     * because a successful controller call only means the request was dispatched,
+     * not that the IME actually accepted it.
+     */
+    private fun showKeyboardWhenWindowReady(view: View, attemptsRemaining: Int = 20) {
+        val attached = try {
+            ViewCompat.isAttachedToWindow(view)
+        } catch (_: RuntimeException) {
+            false
+        }
+        val windowFocused = try {
+            view.hasWindowFocus()
+        } catch (_: RuntimeException) {
+            false
+        }
+
+        if ((!attached || !windowFocused) && attemptsRemaining > 0) {
+            try {
+                view.postDelayed(
+                    { showKeyboardWhenWindowReady(view, attemptsRemaining - 1) },
+                    50L
+                )
+            } catch (_: RuntimeException) {
+                // Fall through to a best-effort IME request below.
+            }
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            showWithWindowInsets(view)
+            showWithInputMethodManager(view)
+        } else {
+            showWithInputMethodManager(view)
         }
     }
 
