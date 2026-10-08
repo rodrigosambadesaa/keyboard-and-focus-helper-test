@@ -30,6 +30,7 @@ The API 30 IME symptom is **timing-sensitive rather than deterministic**. Earlie
 
 - `KeyboardAndFocusHelperTest`: Robolectric contracts against the exact Gist.
 - `FixedKeyboardAndFocusHelperTest`: regression for immediate off-main-thread subscription removal.
+- `LegacyGeometryRegressionTest`: deterministic legacy-geometry regression comparing the exact Gist with the corrected implementation.
 - `LegacyGeometryRegressionTest`: deterministic proof of the exact Gist's local-vs-screen coordinate bug; the exact Gist returns hidden/0 px while the corrected helper returns the expected 300 px.
 - `KeyboardDeviceTest`: general device contracts against the exact Gist.
 - `OriginalGistImeRegressionTest`: real IME show/measure/hide against the exact Gist.
