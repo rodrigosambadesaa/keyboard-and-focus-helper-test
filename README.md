@@ -45,7 +45,7 @@ Workflow run [37712774546](https://github.com/rodrigosambadesaa/keyboard-and-foc
 - Unit tests: **21/21 PASS**
 - API 23 instrumentation: **PASS**
 - API 28 instrumentation: **PASS**
-- API 30 instrumentation: **PASS**
+- API 30 instrumentation: **PASS** (the exact Gist IME regression did not reproduce in this final run)
 - Exact Gist API 30 IME regression test in the final run: **PASS** (the earlier failure is timing-sensitive and did not reproduce)
 - API 35 instrumentation: **PASS**
 - Artifact: `android-debug-apk-and-tests`
