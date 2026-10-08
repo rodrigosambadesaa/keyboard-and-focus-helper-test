@@ -361,25 +361,14 @@ object FixedKeyboardAndFocusHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && insets != null) {
             try {
                 val visible = insets.isVisible(WindowInsetsCompat.Type.ime())
-                if (!visible) return KeyboardState(false, 0)
-
-                val insetHeight = max(0, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
-                if (insetHeight > 0) return KeyboardState(true, insetHeight)
-
-                // Android 11 / some IMEs can transiently report visible=true while
-                // the compat IME bottom inset is still zero. Fall back to the
-                // visible-window geometry instead of reporting an impossible
-                // visible keyboard with zero height.
-                val fallback = legacyKeyboardState(
-                    measurementView,
-                    insets,
-                    minimumKeyboardHeightDp
-                )
-                return if (fallback.heightPx > 0) {
-                    KeyboardState(true, fallback.heightPx)
+                val height = if (visible) {
+                    // A visible floating/undocked IME is allowed to contribute no
+                    // bottom inset, so visible=true with height=0 is valid.
+                    max(0, insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
                 } else {
-                    KeyboardState(true, 0)
+                    0
                 }
+                return KeyboardState(visible, height)
             } catch (_: RuntimeException) {
                 // Fall through to the visible-frame calculation on broken ROMs.
             }
