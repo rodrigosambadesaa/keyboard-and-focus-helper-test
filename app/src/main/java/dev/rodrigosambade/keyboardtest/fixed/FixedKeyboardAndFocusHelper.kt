@@ -125,11 +125,19 @@ object FixedKeyboardAndFocusHelper {
         }
 
         /** Removes the listener. Repeated calls are safe. */
+        @Synchronized
         fun remove() {
+            if (removed) return
+
+            // Invalidate synchronously on the calling thread. This prevents a
+            // queued main-thread install/dispatch from reviving the subscription
+            // after a background caller has already requested removal.
+            removed = true
+
             if (Looper.myLooper() == Looper.getMainLooper()) {
-                removeOnMainThread()
+                cleanupAfterRemoval()
             } else {
-                mainHandler.post { removeOnMainThread() }
+                mainHandler.post { cleanupAfterRemoval() }
             }
         }
 
@@ -147,14 +155,13 @@ object FixedKeyboardAndFocusHelper {
 
             lastVisible = state.visible
             lastHeightPx = state.heightPx
-            callback?.onKeyboardVisibilityChanged(state.visible, state.heightPx)
+            if (!removed) {
+                callback?.onKeyboardVisibilityChanged(state.visible, state.heightPx)
+            }
         }
 
         @Synchronized
-        private fun removeOnMainThread() {
-            if (removed) return
-            removed = true
-
+        private fun cleanupAfterRemoval() {
             val observedView = observedViewReference.get()
             val layoutListener = globalLayoutListener
             val attachmentListener = attachStateListener
