@@ -52,7 +52,7 @@ jobs:
             app/build/reports/tests/
           if-no-files-found: ignore
 
-  api30-linux-probe:
+  emulator-matrix:
     needs: unit-tests
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +64,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Require KVM
+      - name: Require KVM once for the whole device matrix
         shell: bash
         run: |
           set -euo pipefail
@@ -72,50 +72,11 @@ jobs:
           sudo chmod 666 /dev/kvm
           test -r /dev/kvm
           test -w /dev/kvm
-      - name: Run API 30 corrected implementation probe
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          target: google_apis
-          emulator-boot-timeout: 600
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
-          script: |
-            set -e
-            for i in $(seq 1 60); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
-            adb shell service check package | grep -q "found"
-            adb shell settings put secure show_ime_with_hard_keyboard 1 || true
-            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
 
-  emulator:
-    needs: unit-tests
-    runs-on: ${{ matrix.runner }}
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        include:
-          - api-level: 30
-            runner: macos-15-intel
-          - api-level: 23
-            runner: macos-15-intel
-          - api-level: 28
-            runner: macos-15-intel
-          - api-level: 35
-            runner: macos-15-intel
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-      - name: Run instrumented tests
+      - name: API 23 instrumentation
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api-level }}
+          api-level: 23
           arch: x86_64
           target: google_apis
           emulator-boot-timeout: 900
@@ -125,13 +86,57 @@ jobs:
             for i in $(seq 1 90); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
             adb shell service check package | grep -q "found"
             adb shell settings put secure show_ime_with_hard_keyboard 1 || true
-
-            # These must pass on every API: general contracts for the exact Gist
-            # plus the corrected implementation's IME regression.
             gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
 
-            # Keep testing the exact Gist's IME behavior. API 30 currently
-            # reproduces the AndroidX controller-path regression documented in
-            # the repository, so record it without masking failures in the fixed
-            # implementation or in the general contract suite.
-            if [ "${{ matrix.api-level }}" = "30" ]; then gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest && echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run." || echo "::warning::Exact Gist reproduced the known API 30 IME visibility regression; corrected implementation passed separately."; else gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest; fi
+      - name: API 28 instrumentation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          target: google_apis
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            set -e
+            for i in $(seq 1 90); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
+            adb shell service check package | grep -q "found"
+            adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
+
+      - name: API 30 instrumentation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            set -e
+            for i in $(seq 1 90); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
+            adb shell service check package | grep -q "found"
+            adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            set +e
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
+            ORIGINAL_GIST_STATUS=$?
+            set -e
+            if [ "$ORIGINAL_GIST_STATUS" -eq 0 ]; then echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run."; else echo "::warning::Exact Gist reproduced the API 30 IME regression; fixed implementation passed separately."; fi
+
+      - name: API 35 instrumentation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            set -e
+            for i in $(seq 1 90); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
+            adb shell service check package | grep -q "found"
+            adb shell settings put secure show_ime_with_hard_keyboard 1 || true
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
