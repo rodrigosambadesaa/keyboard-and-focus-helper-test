@@ -30,6 +30,7 @@ The API 30 IME symptom is **timing-sensitive rather than deterministic**. Earlie
 
 - `KeyboardAndFocusHelperTest`: Robolectric contracts against the exact Gist.
 - `FixedKeyboardAndFocusHelperTest`: regression for immediate off-main-thread subscription removal.
+- `LegacyGeometryRegressionTest`: deterministic proof of the exact Gist's local-vs-screen coordinate bug; the exact Gist returns hidden/0 px while the corrected helper returns the expected 300 px.
 - `KeyboardDeviceTest`: general device contracts against the exact Gist.
 - `OriginalGistImeRegressionTest`: real IME show/measure/hide against the exact Gist.
 - `FixedKeyboardDeviceTest`: real IME show/measure/hide against the corrected implementation.
@@ -38,15 +39,16 @@ The API 30 IME symptom is **timing-sensitive rather than deterministic**. Earlie
 
 ## Validated CI result
 
-Workflow run [37712774546](https://github.com/rodrigosambadesaa/keyboard-and-focus-helper-test/actions/runs/37712774546) completed successfully.
+Workflow run [37714005497](https://github.com/rodrigosambadesaa/keyboard-and-focus-helper-test/actions/runs/37714005497) completed successfully.
 
 - Exact pinned Gist byte comparison: **PASS**
 - Build + debug APK + instrumentation APK: **PASS**
-- Unit tests: **21/21 PASS**
+- Unit tests: **22/22 PASS**
 - API 23 instrumentation: **PASS**
 - API 28 instrumentation: **PASS**
 - API 30 instrumentation: **PASS** (the exact Gist IME regression did not reproduce in this final run)
 - Exact Gist API 30 IME regression test in the final run: **PASS** (the earlier failure is timing-sensitive and did not reproduce)
+- Deterministic legacy geometry regression: **REPRODUCED on exact Gist / PASS on corrected implementation**
 - API 35 instrumentation: **PASS**
 - Artifact: `android-debug-apk-and-tests`
 
