@@ -4,29 +4,52 @@ Android test application and CI harness for the exact source of [KeyboardAndFocu
 
 ## Exact Gist source under test
 
-`app/src/main/java/KeyboardAndFocusHelper.kt` is downloaded verbatim from the pinned Gist revision:
+`app/src/main/java/KeyboardAndFocusHelper.kt` is the Gist source verbatim, pinned to revision:
 
 `e4d47500bd1658d3134b39a4c10e4072984da580`
 
-The test harness, Activity, Gradle configuration, and tests may change. The Gist source itself is not adapted, repackaged, or patched before compilation.
+The Gist currently has a single revision. The test harness, Activity, Gradle configuration, and tests may change, but the source under test is not adapted, repackaged, or patched before compilation.
 
-GitHub Actions downloads that RAW revision again and compares it byte-for-byte with the repository copy before running the build. `.github/workflows/sync-gist.yml` is the reproducible synchronization path.
+GitHub Actions downloads the pinned RAW file again and compares it byte-for-byte with the repository copy before building. `.github/workflows/sync-gist.yml` provides the reproducible synchronization path.
 
 ## Corrected implementation
 
 `app/src/main/java/dev/rodrigosambade/keyboardtest/fixed/FixedKeyboardAndFocusHelper.kt` is a separate corrected implementation. It does **not** replace or modify the exact Gist source.
 
-The regression found on Android 11 / API 30 concerns the IME-show path that obtains a controller through `ViewCompat.getWindowInsetsController(view)`. AndroidX documents an API-30-specific controller-construction regression and recommends using the Window + View based controller path. The corrected implementation therefore resolves the owning Activity and uses `WindowInsetsControllerCompat(window, view)`, falling back to `InputMethodManager` when no Activity-backed window can be resolved.
+The test work identified several robustness issues worth correcting separately:
 
-## Test layout
+- **IME show timing on Android 11/API 30+:** a request can be issued after attachment but before the Activity window has focus. The corrected implementation waits briefly for attachment + window focus, then uses `WindowCompat.getInsetsController(window, view)` and also performs an `InputMethodManager` best-effort request.
+- **Deprecated controller path:** the exact Gist uses `ViewCompat.getWindowInsetsController(view)`; the corrected implementation binds the controller explicitly to the owning Window and editor View.
+- **Legacy keyboard geometry:** the exact Gist mixes a local view height with a screen-coordinate visible-frame bottom. The corrected implementation converts the root bottom to screen coordinates with `getLocationOnScreen()` before calculating the obscured region.
+- **Background subscription removal:** the exact Gist does not set `removed=true` until its main-thread cleanup runs. The corrected implementation invalidates the subscription synchronously, preventing a queued install/dispatch from reviving it.
+- **Floating IMEs:** a visible floating/undocked IME may legitimately contribute a zero bottom inset. The corrected implementation treats `visible=true, height=0` as valid instead of forcing an artificial positive height.
 
-- `KeyboardDeviceTest`: general contracts against the exact Gist.
-- `OriginalGistImeRegressionTest`: real IME show/measure/hide test against the exact Gist.
-- `FixedKeyboardDeviceTest`: the same real IME regression against the corrected implementation.
+The API 30 IME symptom is **timing-sensitive rather than deterministic**. Earlier CI runs reproduced a failure to make the IME visible with the exact Gist; the final unified KVM run did not reproduce it. The corrected implementation is therefore maintained as a robustness fix, not as evidence that the exact Gist must fail on every Android 11 run.
+
+## Tests
+
+- `KeyboardAndFocusHelperTest`: Robolectric contracts against the exact Gist.
+- `FixedKeyboardAndFocusHelperTest`: regression for immediate off-main-thread subscription removal.
+- `KeyboardDeviceTest`: general device contracts against the exact Gist.
+- `OriginalGistImeRegressionTest`: real IME show/measure/hide against the exact Gist.
+- `FixedKeyboardDeviceTest`: real IME show/measure/hide against the corrected implementation.
 - Robolectric coverage: API 19, 28, 30, and 34.
-- Device/emulator coverage: API 23, 28, 30, and 35.
+- Emulator coverage: API 23, 28, 30, and 35.
 
-On API 30 the exact-Gist IME regression is recorded separately so it can reproduce the known bug without masking failures in the corrected implementation. The corrected implementation remains a required passing test.
+## Validated CI result
+
+Workflow run [37711543817](https://github.com/rodrigosambadesaa/keyboard-and-focus-helper-test/actions/runs/37711543817) completed successfully.
+
+- Exact pinned Gist byte comparison: **PASS**
+- Build + debug APK + instrumentation APK: **PASS**
+- Unit tests: **21/21 PASS**
+- API 23 instrumentation: **PASS**
+- API 28 instrumentation: **PASS**
+- API 30 instrumentation: **PASS**
+- API 35 instrumentation: **PASS**
+- Artifact: `android-debug-apk-and-tests`
+
+The emulator matrix runs sequentially on one Ubuntu KVM host to avoid host-to-host KVM variability.
 
 ## Build
 
