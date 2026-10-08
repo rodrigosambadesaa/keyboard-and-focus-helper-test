@@ -16,7 +16,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.WindowCompat
 import java.lang.ref.WeakReference
 import kotlin.math.max
 
@@ -473,7 +473,7 @@ object FixedKeyboardAndFocusHelper {
 
     private fun hideWithWindowInsets(window: Window, view: View): Boolean {
         return try {
-            WindowInsetsControllerCompat(window, view)
+            WindowCompat.getInsetsController(window, view)
                 .hide(WindowInsetsCompat.Type.ime())
             true
         } catch (_: RuntimeException) {
@@ -491,9 +491,9 @@ object FixedKeyboardAndFocusHelper {
     private fun showWithWindowInsets(view: View): Boolean {
         val activity = findActivity(view.context) ?: return false
         return try {
-            // Use the Window + View constructor so API 30 receives AndroidX's
-            // IME workaround instead of the deprecated controller-only path.
-            WindowInsetsControllerCompat(activity.window, view)
+            // Explicitly bind the controller to the owning Window + editor View.
+            // This is the current AndroidX-recommended path for reliable IME control.
+            WindowCompat.getInsetsController(activity.window, view)
                 .show(WindowInsetsCompat.Type.ime())
             true
         } catch (_: RuntimeException) {
