@@ -82,16 +82,10 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           script: |
             set -e
-            for i in $(seq 1 60); do
-              if adb shell service check package 2>/dev/null | grep -q "found"; then
-                break
-              fi
-              sleep 2
-            done
+            for i in $(seq 1 60); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
             adb shell service check package | grep -q "found"
             adb shell settings put secure show_ime_with_hard_keyboard 1 || true
-            gradle --no-daemon :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
 
   emulator:
     needs: unit-tests
@@ -128,36 +122,16 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           script: |
             set -e
-            for i in $(seq 1 90); do
-              if adb shell service check package 2>/dev/null | grep -q "found"; then
-                break
-              fi
-              sleep 2
-            done
+            for i in $(seq 1 90); do if adb shell service check package 2>/dev/null | grep -q "found"; then break; fi; sleep 2; done
             adb shell service check package | grep -q "found"
             adb shell settings put secure show_ime_with_hard_keyboard 1 || true
 
             # These must pass on every API: general contracts for the exact Gist
             # plus the corrected implementation's IME regression.
-            gradle --no-daemon :app:connectedDebugAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
+            gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.KeyboardDeviceTest,dev.rodrigosambade.keyboardtest.FixedKeyboardDeviceTest
 
             # Keep testing the exact Gist's IME behavior. API 30 currently
             # reproduces the AndroidX controller-path regression documented in
             # the repository, so record it without masking failures in the fixed
             # implementation or in the general contract suite.
-            if [ "${{ matrix.api-level }}" = "30" ]; then
-              set +e
-              gradle --no-daemon :app:connectedDebugAndroidTest \
-                -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
-              ORIGINAL_GIST_STATUS=$?
-              set -e
-              if [ "$ORIGINAL_GIST_STATUS" -eq 0 ]; then
-                echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run."
-              else
-                echo "::warning::Exact Gist reproduced the known API 30 IME visibility regression; corrected implementation passed separately."
-              fi
-            else
-              gradle --no-daemon :app:connectedDebugAndroidTest \
-                -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest
-            fi
+            if [ "${{ matrix.api-level }}" = "30" ]; then gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest && echo "::notice::Exact Gist API 30 IME regression did not reproduce on this run." || echo "::warning::Exact Gist reproduced the known API 30 IME visibility regression; corrected implementation passed separately."; else gradle --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=dev.rodrigosambade.keyboardtest.OriginalGistImeRegressionTest; fi
