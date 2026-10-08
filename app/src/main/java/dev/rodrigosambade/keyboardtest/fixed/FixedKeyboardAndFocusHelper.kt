@@ -24,18 +24,19 @@ import kotlin.math.max
  * Safe soft-keyboard, focus, and IME-visibility utilities for Android API 16+.
  *
  * This file depends only on the Android SDK and `androidx.core`. On API 30 and
- * newer, keyboard commands use [androidx.core.view.WindowInsetsControllerCompat]
- * and visibility/height are read from IME window insets. Earlier releases use
- * [InputMethodManager] and the visible-window-frame layout signal. Consequently,
- * the reported API 30+ height is the exact IME bottom inset, while legacy Android
- * returns the best measurable obscured height after subtracting system-bar insets.
+ * newer, keyboard commands use [WindowCompat.getInsetsController] bound to the
+ * owning Window and editor View; visibility/height are read from IME window
+ * insets. Earlier releases use [InputMethodManager] and the visible-window-frame
+ * layout signal. A floating/undocked visible IME may legitimately report a zero
+ * bottom inset; legacy Android returns the best measurable obscured height after
+ * subtracting system-bar insets.
  *
  * The visibility subscription removes itself when its observed Activity or
  * Fragment view is detached. Call [KeyboardVisibilitySubscription.remove] from
  * `onDestroy()` or `onDestroyView()` as well; explicit cleanup makes the ownership
  * unambiguous and immediately releases the callback.
  *
- * ## Dockerized emulator test matrix
+ * ## Emulator test matrix
  *
  * Build an instrumentation APK with `minSdk 16`, the current installed compile
  * SDK, and an `androidx.core` version compatible with that minimum. Wait for each
@@ -51,7 +52,8 @@ import kotlin.math.max
  * - **API 28:** repeats the legacy path with modern navigation/status-bar layouts.
  *   Verify the cursor moves to the end of an `EditText`, height never becomes
  *   negative, and changing orientation produces a fresh height callback.
- * - **API 30+:** exercises `WindowInsetsControllerCompat` and IME insets. Verify
+ * - **API 30+:** exercises `WindowCompat.getInsetsController(window, view)` and
+ *   IME insets. Verify
  *   open/closed callbacks, the IME bottom-inset height, rotation, multi-window,
  *   gesture navigation, and behavior with a physical keyboard connected.
  *
