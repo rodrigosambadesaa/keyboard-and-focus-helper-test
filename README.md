@@ -38,7 +38,7 @@ The API 30 IME symptom is **timing-sensitive rather than deterministic**. Earlie
 
 ## Validated CI result
 
-Workflow run [37711543817](https://github.com/rodrigosambadesaa/keyboard-and-focus-helper-test/actions/runs/37711543817) completed successfully.
+Workflow run [37712774546](https://github.com/rodrigosambadesaa/keyboard-and-focus-helper-test/actions/runs/37712774546) completed successfully.
 
 - Exact pinned Gist byte comparison: **PASS**
 - Build + debug APK + instrumentation APK: **PASS**
@@ -46,6 +46,7 @@ Workflow run [37711543817](https://github.com/rodrigosambadesaa/keyboard-and-foc
 - API 23 instrumentation: **PASS**
 - API 28 instrumentation: **PASS**
 - API 30 instrumentation: **PASS**
+- Exact Gist API 30 IME regression test in the final run: **PASS** (the earlier failure is timing-sensitive and did not reproduce)
 - API 35 instrumentation: **PASS**
 - Artifact: `android-debug-apk-and-tests`
 
