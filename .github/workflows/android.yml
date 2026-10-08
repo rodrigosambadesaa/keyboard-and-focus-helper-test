@@ -82,7 +82,6 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           script: |
             set -e
-            adb wait-for-device
             for i in $(seq 1 60); do
               if adb shell service check package 2>/dev/null | grep -q "found"; then
                 break
@@ -129,7 +128,6 @@ jobs:
           emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader_indirect
           script: |
             set -e
-            adb wait-for-device
             for i in $(seq 1 90); do
               if adb shell service check package 2>/dev/null | grep -q "found"; then
                 break
