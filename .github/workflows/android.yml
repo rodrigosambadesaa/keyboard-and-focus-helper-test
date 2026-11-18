@@ -12,6 +12,10 @@ concurrency:
   group: android-ci-${{ github.ref }}
   cancel-in-progress: true
 
+# CVE-2026-114938: mitigate affected Base64 intrinsic in build JVM.
+env:
+  JAVA_TOOL_OPTIONS: -XX:-UseBASE64Intrinsics
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
